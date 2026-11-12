@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#FDFCF9" />
+<title>司司猫向导 · 多人演示</title>
+<style>
+  :root{
+    --paper:#FDFCF9;
+    --paper-2:#F6F1E7;
+    --ink:#2B2420;
+    --ink-70:rgba(43,36,32,.72);
+    --ink-45:rgba(43,36,32,.45);
+    --gold:#CE8524;
+    --gold-deep:#A66A1C;
+    --line:rgba(43,36,32,.12);
+    --line-soft:rgba(43,36,32,.07);
+    --serif:"Songti SC","STSong","SimSun","Noto Serif CJK SC",serif;
+    --sans:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+    --ease:cubic-bezier(.4,0,.2,1);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;overflow:hidden}
+  button{font-family:inherit}
+
+  .app{display:flex;flex-direction:column;height:100vh;height:100dvh}
+
+  /* 顶栏 */
+  .top{display:flex;align-items:center;gap:14px;padding:22px 32px 16px}
+  .gname{font-family:var(--serif);font-size:17px;letter-spacing:.14em}
+  .gname small{display:block;font-size:9.5px;letter-spacing:.18em;color:var(--ink-45);margin-top:5px}
+  .tag{font-size:9.5px;letter-spacing:.14em;color:var(--gold);border:1px solid rgba(206,133,36,.35);padding:4px 9px;border-radius:1px}
+  .tag.plain{color:var(--ink-45);border-color:var(--line)}
+  .spacer{flex:1}
+  .members{display:flex;align-items:center}
+  .ava{
+    width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:#fff;
+    display:grid;place-items:center;font-size:11px;color:var(--ink-70);cursor:pointer;
+    margin-left:-7px;transition:border-color .3s var(--ease),transform .3s var(--ease);
+  }
+  .ava:hover{border-color:var(--gold);color:var(--gold);transform:translateY(-1px)}
+  .ava.me{border-color:rgba(206,133,36,.55);color:var(--gold)}
+  .views{display:flex;gap:2px;padding:2px;border:1px solid var(--line);border-radius:99px;background:#fff;margin-left:6px}
+  .views button{border:0;background:none;font-size:11px;letter-spacing:.08em;padding:6px 14px;border-radius:99px;color:var(--ink-45);cursor:pointer;transition:.3s}
+  .views button.on{background:var(--ink);color:#FFFDF7}
+
+  /* 舞台 */
+  .stage{position:relative;flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:18px;padding:0 32px 28px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:2px;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+
+  /* 对话 */
+  .msgs{flex:1;overflow:auto;padding:30px 30px 10px;display:flex;flex-direction:column;gap:22px}
+
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .row,.sys{animation:rise .42s cubic-bezier(.4,0,.2,1) both}
+  @media (prefers-reduced-motion: reduce){
+    .row,.sys{animation:none}
+  }
+  .row{display:flex;gap:12px;max-width:84%}
+  .row.me{align-self:flex-end;justify-content:flex-end}
+  .who{
+    width:28px;height:28px;border-radius:50%;border:1px solid var(--line);flex:none;
+    display:grid;place-items:center;font-size:10px;color:var(--ink-45);margin-top:2px;background:#fff;
+  }
+  .who.cat{border-color:rgba(206,133,36,.45);color:var(--gold)}
+  .body{display:flex;flex-direction:column;gap:5px;min-width:0}
+  .name{font-size:9.5px;letter-spacing:.16em;color:var(--ink-45)}
+  .bubble{font-size:14px;line-height:2;letter-spacing:.02em;color:var(--ink-70)}
+  .row.cat .bubble{
+    background:var(--paper);
+    border-left:2px solid rgba(206,133,36,.55);
+    padding:12px 16px;
+    color:var(--ink);
+  }
+  .row.me .bubble{
+    background:#fff;border:1px solid rgba(206,133,36,.5);color:var(--ink);
+    padding:12px 18px;border-radius:2px;
+  }
+  .row.other .bubble{
+    background:var(--paper-2);border:1px solid var(--line-soft);
+    padding:12px 16px;border-radius:2px;
+  }
+  .actions{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+  .btn{
+    font-size:12.5px;letter-spacing:.1em;padding:10px 20px;border-radius:1px;cursor:pointer;
+    border:1px solid var(--gold);background:var(--gold);color:#FFFDF7;
+    transition:background .4s var(--ease),border-color .4s var(--ease),color .4s var(--ease);
+  }
+  .btn:hover{background:var(--gold-deep);border-color:var(--gold-deep)}
+  .btn.ghost{background:transparent;color:var(--gold);border-color:rgba(206,133,36,.45)}
+  .btn.ghost:hover{background:rgba(206,133,36,.06);border-color:var(--gold)}
+  .btn.quiet{background:none;border:0;color:var(--ink-45);padding:10px 2px}
+  .btn.quiet:hover{color:var(--gold)}
+
+  .chips{display:flex;gap:8px;flex-wrap:wrap;padding:12px 30px 6px}
+  .chip{
+    font-size:11.5px;letter-spacing:.06em;padding:8px 14px;border-radius:99px;cursor:pointer;
+    border:1px solid var(--line);background:none;color:var(--ink-70);
+    transition:border-color .4s var(--ease),color .4s var(--ease);
+  }
+  .chip:hover{border-color:rgba(206,133,36,.5);color:var(--gold-deep)}
+
+  .composer{display:flex;gap:10px;align-items:center;padding:10px 24px 18px;border-top:1px solid var(--line-soft)}
+  .atcat{
+    font-size:11.5px;letter-spacing:.06em;padding:8px 12px;border-radius:1px;cursor:pointer;
+    border:1px solid rgba(206,133,36,.4);background:none;color:var(--gold);
+  }
+  .atcat:hover{background:rgba(206,133,36,.06)}
+  .composer input{
+    flex:1;border:0;background:none;outline:none;font-size:13.5px;color:var(--ink);
+    padding:10px 4px;letter-spacing:.02em;
+  }
+  .composer input::placeholder{color:rgba(43,36,32,.3)}
+
+  /* 计划侧栏 */
+  .plan{padding:0}
+  .plan h3{
+    margin:0;padding:20px 22px 14px;font-family:var(--serif);font-weight:400;
+    font-size:14px;letter-spacing:.16em;border-bottom:1px solid var(--line-soft);
+    display:flex;justify-content:space-between;align-items:baseline;
+  }
+  .plan h3 span{font-size:9.5px;letter-spacing:.12em;color:var(--gold);font-family:var(--sans)}
+  .prow{display:flex;gap:12px;padding:16px 22px;border-bottom:1px solid var(--line-soft);align-items:flex-start}
+  .prow .t{font-size:10px;color:var(--ink-45);width:40px;flex:none;padding-top:4px;letter-spacing:.06em}
+  .prow .b{flex:1;font-size:13px;letter-spacing:.02em}
+  .prow .b small{display:block;font-size:10px;color:var(--ink-45);margin-top:4px}
+  .prow .ok{font-size:9px;letter-spacing:.1em;color:var(--ink-45);border:1px solid var(--line);padding:2px 7px;border-radius:99px;flex:none;margin-top:2px}
+  .prow .ok.done{color:var(--gold);border-color:rgba(206,133,36,.45)}
+  .pfoot{padding:16px 22px;font-size:10.5px;line-height:1.9;color:var(--ink-45)}
+  .pfoot b{color:var(--ink);font-weight:600}
+
+  /* 收藏 */
+  .fav{display:none;grid-column:1 / -1;overflow:auto;padding:26px 30px 40px}
+  .stage[data-view="fav"] .chat,.stage[data-view="fav"] .plan{display:none}
+  .stage[data-view="fav"] .fav{display:block}
+  .fav-head{display:flex;align-items:baseline;gap:16px;margin-bottom:22px}
+  .fav-head b{font-family:var(--serif);font-weight:400;font-size:19px;letter-spacing:.18em}
+  .fav-head span{font-size:10px;letter-spacing:.12em;color:var(--ink-45)}
+  .fav-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:1px;background:var(--line);border:1px solid var(--line)}
+  .fcard{background:var(--paper);padding:20px 18px 16px;display:flex;flex-direction:column;min-height:170px}
+  .fcard .tagm{font-size:9px;letter-spacing:.16em;color:var(--gold);border:1px solid rgba(206,133,36,.35);padding:3px 7px;align-self:flex-start}
+  .fcard .tagm.must{background:rgba(206,133,36,.07)}
+  .fcard h4{font-family:var(--serif);font-weight:400;font-size:16px;letter-spacing:.14em;margin:14px 0 8px}
+  .fcard p{font-size:11.5px;line-height:1.9;color:var(--ink-70);margin:0}
+  .fcard .by{margin-top:auto;padding-top:14px;font-size:9.5px;letter-spacing:.1em;color:var(--ink-45)}
+  .fcard.add{align-items:center;justify-content:center;color:var(--ink-45);font-size:11px;letter-spacing:.1em;cursor:pointer}
+  .fcard.add span{display:block;font-size:20px;color:var(--gold);margin-bottom:8px}
+
+  /* 私聊浮层 */
+  .dm{position:absolute;inset:0;z-index:30;background:#fff;display:none;flex-direction:column;border:1px solid var(--line)}
+  .dm.open{display:flex}
+  .dmbanner{
+    font-size:10px;letter-spacing:.06em;color:var(--ink-45);
+    background:var(--paper-2);padding:9px 26px;border-bottom:1px solid var(--line-soft);line-height:1.7;
+  }
+  .dmhead{display:flex;align-items:center;gap:12px;padding:18px 26px 14px;border-bottom:1px solid var(--line-soft)}
+  .dmhead b{font-family:var(--serif);font-weight:400;font-size:15px;letter-spacing:.16em}
+  .dmhead span{font-size:10px;color:var(--ink-45);letter-spacing:.1em}
+  .dm .msgs{padding:24px 26px 10px}
+
+  /* 完整计划页 */
+  .planpage{position:absolute;inset:0;z-index:40;background:var(--paper);border:1px solid var(--line);display:none;flex-direction:column}
+  .planpage.open{display:flex}
+  .pp-head{display:flex;align-items:center;gap:16px;padding:20px 28px 16px;border-bottom:1px solid var(--line-soft)}
+  .pp-head b{font-family:var(--serif);font-weight:400;font-size:17px;letter-spacing:.18em;flex:1}
+  .pp-body{flex:1;overflow:auto;padding:6px 28px 30px;max-width:820px;width:100%;margin:0 auto}
+  .pp-day{font-size:9.5px;letter-spacing:.24em;color:var(--gold);margin:24px 0 6px}
+  .pp-row{display:flex;gap:16px;padding:15px 4px;border-bottom:1px solid var(--line-soft);align-items:baseline;cursor:pointer}
+  .pp-row:hover{background:rgba(206,133,36,.03)}
+  .pp-row .t{width:52px;font-size:10.5px;color:var(--ink-45);flex:none;letter-spacing:.06em}
+  .pp-row .b{flex:1;font-size:14px}
+  .pp-row .b small{display:block;font-size:10px;color:var(--ink-45);margin-top:3px}
+  .pp-row.done{opacity:.45}
+  .pp-row.done .b{text-decoration:line-through;text-decoration-thickness:1px}
+  .pp-edit{padding:10px 4px 16px 68px;background:rgba(246,241,231,.55)}
+  .pp-edit label{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-45);margin:4px 14px 4px 0}
+  .pp-edit input[type=text]{font:inherit;font-size:12px;padding:6px 8px;border:1px solid var(--line);background:#fff;width:130px;outline:none}
+  .pp-edit input:focus{border-color:var(--gold)}
+  .pp-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+
+  /* 对比抽屉 */
+  .drawer{position:absolute;top:0;right:0;bottom:0;width:min(620px,100%);z-index:50;background:#fff;border-left:1px solid var(--line);transform:translateX(101%);transition:transform .45s var(--ease);display:flex;flex-direction:column}
+  .drawer.open{transform:none}
+  .dr-head{display:flex;align-items:center;gap:14px;padding:20px 24px 14px;border-bottom:1px solid var(--line-soft)}
+  .dr-head b{font-family:var(--serif);font-weight:400;font-size:16px;letter-spacing:.16em;flex:1}
+  .dr-body{flex:1;overflow:auto;padding:18px 24px}
+  table{width:100%;border-collapse:collapse;font-size:12px}
+  th,td{text-align:left;padding:12px 8px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+  th{font-size:9.5px;letter-spacing:.16em;color:var(--ink-45);font-weight:400}
+  td.k{font-size:10.5px;color:var(--ink-45);width:20%;letter-spacing:.08em}
+  .sig{font-size:9.5px;color:var(--gold-deep);letter-spacing:.08em}
+
+  .at{color:var(--gold);letter-spacing:.02em}
+
+  /* 提案与确认 */
+  .creq{padding:14px 22px 0;display:flex;gap:6px;flex-wrap:wrap}
+  .cchip{font-size:10px;letter-spacing:.08em;border:1px solid var(--line);padding:4px 9px;border-radius:99px;color:var(--ink-45);cursor:default}
+  .cchip.done{color:var(--gold);border-color:rgba(206,133,36,.45)}
+  .cchip.wait{cursor:pointer;border-style:dashed}
+  .cchip.wait:hover{color:var(--gold);border-color:var(--gold)}
+
+  /* 邀请 */
+  .sys{text-align:center;font-size:10.5px;letter-spacing:.08em;color:var(--ink-45);padding:2px 0}
+  .invite{position:fixed;inset:0;background:rgba(43,36,32,.16);display:none;place-items:center;z-index:60}
+  .invite.open{display:grid}
+  .invite-card{background:#fff;border:1px solid var(--line);padding:26px 26px 20px;width:360px;max-width:88vw}
+  .invite-card b{font-family:var(--serif);font-weight:400;font-size:16px;letter-spacing:.16em;display:block;margin-bottom:14px}
+  .invite-card .link{font-family:ui-monospace,Consolas,monospace;font-size:12.5px;background:var(--paper-2);padding:10px 12px;border:1px dashed var(--line);margin:0 0 10px;color:var(--ink)}
+  .invite-card .hint{font-size:10.5px;color:var(--ink-45);line-height:1.8;margin:0 0 16px}
+  .invite-card .row2{display:flex;gap:8px;justify-content:flex-end}
+  .invite-card .code-line{margin:0 0 12px;font-size:11.5px;color:var(--ink-45);letter-spacing:.06em}
+  .invite-card .code-line b{font-family:ui-monospace,Consolas,monospace;font-size:15px;color:var(--gold);letter-spacing:.18em}
+  .invite-card .joinrow{display:flex;gap:8px;margin-bottom:12px}
+  .invite-card .joinrow input{flex:1;font:inherit;font-size:12.5px;padding:9px 10px;border:1px solid var(--line);outline:none;letter-spacing:.2em}
+  .invite-card .joinrow input:focus{border-color:var(--gold)}
+
+  @media (max-width:900px){
+    .top{padding:14px 14px 8px;flex-wrap:wrap;gap:10px}
+    .gname{font-size:15px}
+    .views{margin-left:0}
+    .row{max-width:92%}
+    .bubble{font-size:13.5px}
+    .pp-head,.pp-body{padding-left:16px;padding-right:16px}
+    .pp-row .t{width:44px}
+    .pp-edit{padding-left:4px}
+    .dr-body{padding:14px 16px}
+    th,td{padding:10px 6px;font-size:11.5px}
+    .stage{grid-template-columns:minmax(0,1fr);padding:0 16px 16px}
+    .plan{display:none}
+    .msgs{padding:20px 16px 8px}
+    .chips{padding:10px 16px 4px}
+    .composer{padding:8px 14px 14px}
+    .fav{padding:18px 16px 30px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <div class="gname">大理 · 第二天<small>3 人 · 行程已锁定</small></div>
+    <span class="tag">组长：你</span>
+    <span class="tag plain">你的视角</span>
+    <div class="spacer"></div>
+    <div class="members">
+      <button class="ava me" title="你（组长）">你</button>
+      <button class="ava" data-dm="阿哲" title="看阿哲的私聊（演示用）">哲</button>
+      <button class="ava" data-dm="小满" title="看小满的私聊（演示用）">满</button>
+      <button class="ava" id="inviteBtn" title="邀请同行人" style="font-size:15px">＋</button>
+    </div>
+    <button class="btn quiet" id="resetBtn">重置</button>
+    <nav class="views" id="views">
+      <button data-view="chat" class="on">对话</button>
+      <button data-view="fav">收藏</button>
+    </nav>
+  </header>
+
+  <main class="stage" id="stage" data-view="chat">
+
+    <section class="card chat">
+      <div class="msgs" id="msgs"></div>
+      <div class="chips" id="chips"></div>
+      <div class="composer">
+        <button class="atcat" id="atCat">@猫</button>
+        <input id="input" placeholder="说点什么，或者先点 @猫" />
+        <button class="btn" id="send">发送</button>
+      </div>
+    </section>
+
+    <aside class="card plan">
+      <h3>今天的行程<span id="confirmState">3/3 已确认</span></h3>
+      <div class="prow"><span class="t">09:00</span><span class="b">公园 1<small>已过 · 改去公园 2</small></span><span class="ok done">已确认</span></div>
+      <div class="prow"><span class="t">14:00</span><span class="b">咖啡馆 A<small>原计划 · 赶不上</small></span><span class="ok">待确认</span></div>
+      <div class="prow"><span class="t">16:30</span><span class="b">回酒店<small>时间可动</small></span><span class="ok done">已确认</span></div>
+      <div style="padding:12px 22px 0"><button class="btn quiet" id="openPlanPage">打开完整计划 →</button></div>
+      <div class="creq" id="creq">
+        <span class="cchip done" data-c="you">你 ✓</span>
+        <span class="cchip done" data-c="zhe">阿哲 ✓</span>
+        <span class="cchip done" data-c="man">小满 ✓</span>
+      </div>
+      <div class="pfoot" id="pfoot">三个人都定了。要改的话，组长得重新发起提案。</div>
+      <div style="padding:0 22px 18px"><button class="btn ghost" id="rePropose">重新发起提案</button></div>
+    </aside>
+
+    <section class="card fav" id="fav">
+      <div class="fav-head"><b>收藏</b><span>4 个地方 · 2 个必去 · 都能看见是谁推的</span><button class="btn ghost" id="openCompare" style="margin-left:auto">并排对比</button></div>
+      <div class="fav-grid">
+        <div class="fcard">
+          <span class="tagm must">必去</span>
+          <h4>公园 1</h4>
+          <p>今天上午 · 没去成，改道公园 2</p>
+          <div class="by">你 推的</div>
+        </div>
+        <div class="fcard">
+          <span class="tagm must">必去</span>
+          <h4>咖啡馆 A</h4>
+          <p>东边 900 米 · 过去 25 分钟</p>
+          <div class="by">阿哲 推的</div>
+        </div>
+        <div class="fcard">
+          <span class="tagm">有空去</span>
+          <h4>咖啡馆 B</h4>
+          <p>公园 2 东门 · 8 分钟 · 评论说咖啡一般</p>
+          <div class="by">阿哲、小满 都推了</div>
+        </div>
+        <div class="fcard">
+          <span class="tagm">有空去</span>
+          <h4>咖啡馆 C</h4>
+          <p>西边 600 米 · 12 分钟 · 工作日不排队</p>
+          <div class="by">你 推的</div>
+        </div>
+        <div class="fcard add"><span>＋</span>粘一条链接，加进来</div>
+      </div>
+    </section>
+
+    <!-- 完整计划页 -->
+    <section class="planpage" id="planPage">
+      <div class="pp-head">
+        <button class="btn quiet" id="ppClose">← 收起</button>
+        <b>完整计划</b>
+        <span style="font-size:10px;color:var(--ink-45)">点任意一行，就地改</span>
+      </div>
+      <div class="pp-body" id="ppBody"></div>
+    </section>
+
+    <!-- 对比抽屉 -->
+    <aside class="drawer" id="compare">
+      <div class="dr-head">
+        <b>B 与 C，并排看</b>
+        <button class="btn quiet" id="drClose">收起</button>
+      </div>
+      <div class="dr-body">
+        <table>
+          <tr><th>维度</th><th>咖啡馆 B</th><th>咖啡馆 C</th></tr>
+          <tr><td class="k">距离</td><td><span class="sig">近</span> 8 分钟</td><td>12 分钟</td></tr>
+          <tr><td class="k">排队</td><td>下午可能排</td><td><span class="sig">不排</span> 工作日</td></tr>
+          <tr><td class="k">招牌</td><td>巴斯克</td><td>手冲</td></tr>
+          <tr><td class="k">负评</td><td>咖啡一般（12 条）</td><td>座位少</td></tr>
+          <tr><td class="k">适合</td><td>坐一会儿</td><td>认真喝一杯</td></tr>
+        </table>
+        <p style="font-size:10.5px;color:var(--ink-45);margin-top:14px">只给信号与证据，不打分、不排名。</p>
+      </div>
+    </aside>
+
+    <!-- 私聊（演示视角） -->
+    <div class="dm" id="dm">
+      <div class="dmbanner">演示用视角：真实产品里，你看不到阿哲和小满的私聊。这屏是「切到他手机」才有的。</div>
+      <div class="dmhead">
+        <b id="dmName">阿哲</b>
+        <span>私聊</span>
+        <button class="btn quiet" id="dmClose" style="margin-left:auto">回到群聊</button>
+      </div>
+      <div class="msgs" id="dmMsgs"></div>
+      <div class="chips" id="dmChips"></div>
+    </div>
+  </main>
+
+  <div class="invite" id="invite">
+    <div class="invite-card">
+      <b>邀请同行人</b>
+      <p class="link">sisimao.app/t/8f3k2</p>
+      <p class="code-line">口令 <b id="codeShow">8372</b>　<button class="btn quiet" id="changeCode">改</button></p>
+      <p class="hint" id="inviteHint">链接和口令一起发。对方点开、填名字、输口令，才能进。</p>
+      <div class="joinrow">
+        <input id="codeInput" maxlength="4" placeholder="输入 4 位口令" />
+        <button class="btn" id="simJoin">模拟加入</button>
+      </div>
+      <div class="row2"><button class="btn quiet" id="inviteClose">关闭</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var msgs = document.getElementById('msgs');
+  var chips = document.getElementById('chips');
+  var dm = document.getElementById('dm');
+  var dmMsgs = document.getElementById('dmMsgs');
+  var dmChips = document.getElementById('dmChips');
+  var dmName = document.getElementById('dmName');
+  var stage = document.getElementById('stage');
+
+  function add(kind, who, html, withActions) {
+    var row = document.createElement('div');
+    row.className = 'row ' + kind;
+
+    if (kind === 'me') {
+      row.innerHTML = '<div class="body"><div class="bubble">' + html + '</div></div>';
+    } else {
+      var initial = kind === 'cat' ? '猫' : who.charAt(0);
+      var name = kind === 'cat' ? '司司猫' : who;
+      row.innerHTML =
+        '<div class="who ' + (kind === 'cat' ? 'cat' : '') + '">' + initial + '</div>' +
+        '<div class="body"><div class="name">' + name + '</div>' +
+        '<div class="bubble">' + html + (withActions || '') + '</div></div>';
+    }
+    msgs.appendChild(row);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  function addDM(kind, who, html) {
+    var row = document.createElement('div');
+    row.className = 'row ' + kind;
+    if (kind === 'cat') {
+      row.innerHTML = '<div class="who cat">猫</div><div class="body"><div class="name">司司猫</div><div class="bubble">' + html + '</div></div>';
+    } else {
+      row.innerHTML = '<div class="body"><div class="bubble">' + html + '</div></div>';
+    }
+    dmMsgs.appendChild(row);
+    dmMsgs.scrollTop = dmMsgs.scrollHeight;
+  }
+
+  function setChips(list) {
+    chips.innerHTML = '';
+    list.forEach(function (c) {
+      var b = document.createElement('button');
+      b.className = 'chip';
+      b.textContent = c.label;
+      b.onclick = c.run;
+      chips.appendChild(b);
+    });
+  }
+
+  function setDMChips(list) {
+    dmChips.innerHTML = '';
+    list.forEach(function (c) {
+      var b = document.createElement('button');
+      b.className = 'chip';
+      b.textContent = c.label;
+      b.onclick = c.run;
+      dmChips.appendChild(b);
+    });
+  }
+
+  function openDM(who) {
+    dmName.textContent = who;
+    dm.classList.add('open');
+    dmMsgs.innerHTML = '';
+    dmChips.innerHTML = '';
+
+    if (who === '阿哲') {
+      addDM('other', '', '我就是走不动了，不是不想去。');
+      addDM('cat', '', '那我们不进去，就在门口坐十分钟，行吗？');
+      setDMChips([{ label: '阿哲说：行', run: function () {
+        addDM('other', '', '……行吧。');
+        addDM('cat', '', '那我去群里说一声。');
+        setTimeout(function () { dm.classList.remove('open'); aZheBack(); }, 800);
+      } }]);
+    } else {
+      addDM('other', '', '都到门口了，我不想白跑。');
+      addDM('cat', '', '那十五分钟，进去看一眼就走，我帮你们掐时间。');
+      setDMChips([{ label: '小满说：行', run: function () {
+        addDM('other', '', '……行吧。');
+        addDM('cat', '', '那我去群里说一声。');
+        setTimeout(function () { dm.classList.remove('open'); manBack(); }, 800);
+      } }]);
+    }
+  }
+
+  /* 剧情 */
+  function askWhere() {
+    add('me', '', '下午不知道去哪了');
+    setChips([]);
+    setTimeout(function () {
+      add('cat', '', '计划变了也正常，下午还长。B 和 C 都在附近——');
+      setTimeout(function () {
+        add('cat', '',
+          'B 走过去 8 分钟，但评论里 12 条说咖啡一般；C 走过去 12 分钟，工作日不排队。你更在意哪个？' +
+          '<div class="actions">' +
+            '<button class="btn" data-go="b">就去 B</button>' +
+            '<button class="btn ghost" data-go="c">就去 C</button>' +
+            '<button class="btn quiet" data-go="fav">先看看收藏</button>' +
+          '</div>');
+      }, 600);
+    }, 500);
+  }
+
+  function startFight() {
+    setChips([]);
+    setTimeout(function () { add('other', '阿哲', '我不想再逛展了，脚都走断了。'); }, 300);
+    setTimeout(function () { add('other', '小满', '都到门口了，进去半小时就出来。'); }, 900);
+    setTimeout(function () {
+      add('cat', '', '先别急，我问一下。');
+      setTimeout(function () { openDM('阿哲'); }, 900);
+    }, 1600);
+  }
+
+  function aZheBack() {
+    add('cat', '', '阿哲可以继续走啦。');
+    setTimeout(function () { openDM('小满'); }, 1100);
+  }
+
+  function manBack() {
+    add('cat', '', '小满也好了，行程继续。');
+    setTimeout(function () {
+      add('cat', '',
+        '前面有家咖啡馆 C，走过去 12 分钟，不排队。要现在去吗？' +
+        '<div class="actions"><button class="btn" data-go="c">走</button></div>');
+    }, 800);
+  }
+
+  /* 事件 */
+  msgs.addEventListener('click', function (e) {
+    var g = e.target.getAttribute && e.target.getAttribute('data-go');
+    if (!g) return;
+    if (g === 'fav') { stage.dataset.view = 'fav'; syncViews('fav'); return; }
+    if (g === 'b') { add('me', '', '就去 B'); add('cat', '', '好，带你走。'); }
+    if (g === 'c') { add('me', '', '就去 C'); add('cat', '', '好，带你走。'); }
+    setTimeout(function () {
+      setChips([{ label: '（演示）吵起来了', run: startFight }]);
+    }, 700);
+  });
+
+  var inputEl = document.getElementById('input');
+
+  document.getElementById('atCat').onclick = function () {
+    if (inputEl.value.indexOf('@司司猫') === -1) {
+      inputEl.value = '@司司猫 ' + inputEl.value;
+    }
+    inputEl.focus();
+    try { inputEl.setSelectionRange(inputEl.value.length, inputEl.value.length); } catch (e) {}
+  };
+
+  function sendMsg() {
+    var v = inputEl.value.trim();
+    if (!v) return;
+    inputEl.value = '';
+    var called = v.indexOf('@司司猫') > -1;
+    add('me', '', v.replace('@司司猫', '<span class="at">@司司猫</span>'));
+    setTimeout(function () {
+      add('cat', '', called ? '在。你说。' : '（演示版先不接模型）');
+    }, 450);
+  }
+
+  document.getElementById('send').onclick = sendMsg;
+  inputEl.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); sendMsg(); }
+  });
+
+  document.getElementById('dmClose').onclick = function () { dm.classList.remove('open'); };
+
+  document.getElementById('resetBtn').onclick = function () { location.reload(); };
+
+  Array.prototype.forEach.call(document.querySelectorAll('[data-dm]'), function (b) {
+    b.onclick = function () { openDM(b.dataset.dm); };
+  });
+
+  var viewBtns = document.querySelectorAll('#views button');
+  function syncViews(v) {
+    Array.prototype.forEach.call(viewBtns, function (x) { x.classList.toggle('on', x.dataset.view === v); });
+  }
+  Array.prototype.forEach.call(viewBtns, function (b) {
+    b.onclick = function () { stage.dataset.view = b.dataset.view; syncViews(b.dataset.view); };
+  });
+
+  /* ---------- 完整计划页 ---------- */
+  var planItems = [
+    { day: 'D1', time: '—',     title: '抵达 · 老城', note: '昨天 · 走了两万步', done: true },
+    { day: 'D2', time: '09:00', title: '公园 1',      note: '已过 · 改去公园 2', done: true },
+    { day: 'D2', time: '14:00', title: '咖啡馆 A',    note: '原计划 · 赶不上',   done: false },
+    { day: 'D2', time: '16:30', title: '回酒店',      note: '时间可动',         done: false },
+    { day: 'D3', time: '—',     title: '回程',        note: '下午的高铁',       done: false }
+  ];
+  var openId = -1;
+  var ppBody = document.getElementById('ppBody');
+  var planPage = document.getElementById('planPage');
+
+  function renderPlan() {
+    ppBody.innerHTML = '';
+    var last = '';
+    planItems.forEach(function (it, i) {
+      if (it.day !== last) {
+        last = it.day;
+        var h = document.createElement('div');
+        h.className = 'pp-day';
+        h.textContent = it.day;
+        ppBody.appendChild(h);
+      }
+      var row = document.createElement('div');
+      row.className = 'pp-row' + (it.done ? ' done' : '');
+      row.innerHTML = '<span class="t">' + it.time + '</span><span class="b">' + it.title +
+        '<small>' + it.note + '</small></span>';
+      row.onclick = function () { openId = (openId === i ? -1 : i); renderPlan(); };
+      ppBody.appendChild(row);
+
+      if (openId === i) {
+        var ed = document.createElement('div');
+        ed.className = 'pp-edit';
+        ed.innerHTML =
+          '<label>时间 <input type="text" data-f="time" value="' + it.time + '"></label>' +
+          '<label>地点 <input type="text" data-f="title" value="' + it.title + '"></label>' +
+          '<div class="pp-actions">' +
+          '<button class="btn ghost" data-act="del" data-i="' + i + '">删除</button>' +
+          '<button class="btn" data-act="save" data-i="' + i + '">完成</button></div>';
+        ppBody.appendChild(ed);
+      }
+    });
+  }
+
+  ppBody.addEventListener('click', function (e) {
+    var act = e.target.getAttribute && e.target.getAttribute('data-act');
+    if (!act) return;
+    var i = Number(e.target.getAttribute('data-i'));
+    if (act === 'del') {
+      planItems.splice(i, 1);
+    } else {
+      var ed = e.target.closest('.pp-edit');
+      planItems[i].time = (ed.querySelector('[data-f="time"]').value || '').trim() || '—';
+      planItems[i].title = (ed.querySelector('[data-f="title"]').value || '').trim() || '未命名';
+    }
+    openId = -1;
+    renderPlan();
+    e.stopPropagation();
+  });
+
+  document.getElementById('openPlanPage').onclick = function () {
+    renderPlan();
+    planPage.classList.add('open');
+  };
+  document.getElementById('ppClose').onclick = function () {
+    planPage.classList.remove('open');
+  };
+
+  /* ---------- 对比抽屉 ---------- */
+  var compare = document.getElementById('compare');
+  document.getElementById('openCompare').onclick = function () { compare.classList.add('open'); };
+  document.getElementById('drClose').onclick = function () { compare.classList.remove('open'); };
+
+  /* ---------- 提案与全员确认 ---------- */
+  var confirmed = { you: true, zhe: true, man: true };
+
+  function renderConfirm() {
+    var n = (confirmed.you ? 1 : 0) + (confirmed.zhe ? 1 : 0) + (confirmed.man ? 1 : 0);
+    document.getElementById('confirmState').textContent = n + '/3 已确认';
+
+    var chips = document.querySelectorAll('#creq .cchip');
+    Array.prototype.forEach.call(chips, function (c) {
+      var k = c.getAttribute('data-c');
+      c.classList.toggle('done', !!confirmed[k]);
+      c.classList.toggle('wait', !confirmed[k]);
+      c.textContent = (k === 'you' ? '你' : k === 'zhe' ? '阿哲' : '小满') + (confirmed[k] ? ' ✓' : ' ○');
+    });
+
+    var pf = document.getElementById('pfoot');
+    if (n === 3) {
+      pf.innerHTML = '三个人都定了，行程锁定。要改的话，组长得重新发起提案。';
+    } else {
+      pf.innerHTML = '小满还没确认 · <b>点「小满」替他确认</b><br>猫不催人，只把「谁还没定」告诉组长';
+    }
+  }
+
+  document.getElementById('rePropose').onclick = function () {
+    confirmed.man = false;
+    renderConfirm();
+    add('cat', '', '我提一版新的：下午改去咖啡馆 C。小满，你看一下。');
+  };
+
+  document.getElementById('creq').onclick = function (e) {
+    var c = e.target.closest('.cchip');
+    if (!c) return;
+    var k = c.getAttribute('data-c');
+    if (confirmed[k]) return;
+    confirmed[k] = true;
+    renderConfirm();
+    var n = (confirmed.you ? 1 : 0) + (confirmed.zhe ? 1 : 0) + (confirmed.man ? 1 : 0);
+    if (n === 3) {
+      add('cat', '', '都点头了，就这么定。');
+    }
+  };
+
+  renderConfirm();
+
+  /* ---------- 邀请同行人 ---------- */
+  var members = ['你', '阿哲', '小满'];
+  var queue = ['小北', '阿凯'];
+  var invite = document.getElementById('invite');
+  var inviteHint = document.getElementById('inviteHint');
+  var simJoin = document.getElementById('simJoin');
+
+  document.getElementById('inviteBtn').onclick = function () {
+    invite.classList.add('open');
+  };
+  document.getElementById('inviteClose').onclick = function () {
+    invite.classList.remove('open');
+  };
+
+  var code = '8372';
+  var codeShow = document.getElementById('codeShow');
+  var codeInput = document.getElementById('codeInput');
+
+  document.getElementById('changeCode').onclick = function () {
+    var v = prompt('设一个 4 位数字口令（对方进群要输）', code);
+    if (v === null) return;
+    if (!/^\d{4}$/.test(v)) { alert('要 4 位数字'); return; }
+    code = v;
+    codeShow.textContent = v;
+  };
+
+  simJoin.onclick = function () {
+    if (members.length >= 5) {
+      inviteHint.innerHTML = '<b>已满 5 人。</b><br>超过 5 个人就不是商量，是开会了。';
+      simJoin.style.display = 'none';
+      return;
+    }
+    if (codeInput.value.trim() !== code) {
+      inviteHint.innerHTML = '<b>口令不对。</b> 链接被转发了也不会漏人。';
+      codeInput.value = '';
+      codeInput.focus();
+      return;
+    }
+    codeInput.value = '';
+    inviteHint.textContent = '链接和口令一起发。对方点开、填名字、输口令，才能进。';
+    var name = queue.shift() || ('同行者 ' + (members.length + 1));
+    members.push(name);
+
+    var ava = document.createElement('button');
+    ava.className = 'ava';
+    ava.textContent = name.charAt(name.length - 1);
+    ava.disabled = true;
+    document.getElementById('inviteBtn').before(ava);
+
+    var sys = document.createElement('div');
+    sys.className = 'sys';
+    sys.textContent = name + ' 加入了这个行程 · 现在 ' + members.length + ' 人';
+    msgs.appendChild(sys);
+    msgs.scrollTop = msgs.scrollHeight;
+
+    invite.classList.remove('open');
+
+    if (members.length >= 5) {
+      simJoin.textContent = '已满 5 人';
+    } else {
+      simJoin.textContent = '模拟：' + (queue[0] || '下一位') + '加入';
+    }
+  };
+
+  /* 开场 */
+  add('cat', '', '下午三点，你在公园 2。原计划是公园 1 → 咖啡馆 A，现在赶不上了。');
+  setChips([
+    { label: '下午不知道去哪了', run: askWhere },
+    { label: '（演示）吵起来了', run: startFight }
+  ]);
+})();
+</script>
+</body>
+</html>
